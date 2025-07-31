@@ -2,7 +2,7 @@ defmodule KV.Registry do
   use GenServer
 
   ### Client API
-  
+
   @doc """
   Start the registry
   """
@@ -15,10 +15,10 @@ defmodule KV.Registry do
   Looks up the buckets pid for `name` stored in `server` 
 
   Returns `{:ok, pid}` if the buckets exist, `:error` otherwise
-  """ 
-  #@spec lookup(GenServer.server(), String.t()) :: {:ok, pid()} | :error
+  """
+  # @spec lookup(GenServer.server(), String.t()) :: {:ok, pid()} | :error
   def lookup(server, name) do
-    #GenServer.call(server, {:lookup, name})
+    # GenServer.call(server, {:lookup, name})
     case :ets.lookup(server, name) do
       [{^name, pid}] -> {:ok, pid}
       [] -> :error
@@ -40,17 +40,18 @@ defmodule KV.Registry do
     {:ok, {names, refs}}
   end
 
-  #@impl true
-  #def handle_call({:lookup, name}, _from, state) do
+  # @impl true
+  # def handle_call({:lookup, name}, _from, state) do
   #  {names, _} = state
   #  {:reply, Map.fetch(names, name), state}  
-  #end
+  # end
 
   @impl true
   def handle_call({:create, name}, _from, {names, refs}) do
     case lookup(names, name) do
       {:ok, pid} ->
         {:reply, pid, {names, refs}}
+
       :error ->
         {:ok, pid} = DynamicSupervisor.start_child(KV.BucketSupervisor, KV.Bucket)
         ref = Process.monitor(pid)
@@ -62,7 +63,7 @@ defmodule KV.Registry do
 
   @impl true
   def handle_info({:DOWN, ref, :process, _pid, _reason}, {names, refs}) do
-    {name, refs} = Map.pop(refs, ref) 
+    {name, refs} = Map.pop(refs, ref)
     :ets.delete(names, name)
     {:noreply, {names, refs}}
   end
